@@ -4,6 +4,20 @@
 
 using namespace std;
 
+struct Node {//this is mostly for readability
+    vector<vector<int>> grid;
+    int cost = 0;
+    int depth = 0;
+
+    bool operator>(const Node& rhs) const
+    {
+        return cost > rhs.cost;
+    }
+
+    
+
+};
+
 vector<vector<int>> goal_state = {
     {1, 2, 3},
     {4, 5, 6},
@@ -22,9 +36,6 @@ vector<vector<int>> operators = {
     {0, -1}
 };
 
-struct Node {//this is mostly for readability
-    vector<vector<int>> grid;
-};
 
 void printNode(const Node& node) {
     for (int i = 0; i < node.grid.size(); i++){
@@ -34,12 +45,35 @@ void printNode(const Node& node) {
         cout << endl;
     }
 
+    cout << "cost: " << node.cost << endl;
+    cout << "depth: " << node.depth << endl;
     cout << endl;
 }
 
-vector<Node> expand(const Node& node) {
+int misplacedTile(const Node& node) {
 
-    vector<Node> expandedNodes;
+    int outOfPlace = 0;
+
+    for (int i = 0; i < node.grid.size(); ++i){
+        for (int j = 0; j < node.grid[0].size(); ++j) {
+            
+            int properPos = 1 + (node.grid.size() * i + j);
+            if (properPos == 9) {
+                properPos = 0;
+            }
+
+            if (node.grid[i][j] != properPos) {
+                outOfPlace++;
+            }
+        }
+    }
+
+    return outOfPlace;
+
+}
+
+void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes) {
+
     vector<int> blankCoords;
 
     for (int i = 0; i < node.grid.size(); i++){
@@ -55,62 +89,49 @@ vector<Node> expand(const Node& node) {
 
         Node newNode;
         newNode.grid = node.grid;
+        newNode.depth = node.depth + 1;
 
         int verticalMove = operators[i][1] + blankCoords[1];
         int horizontalMove = operators[i][0] + blankCoords[0];
 
-        cout << "horizontal move: " << horizontalMove << endl;
-        cout << "vertical move: " << verticalMove << endl;
-
         if (i < 2 && horizontalMove < node.grid.size() && horizontalMove >= 0){
-            //i < 2 means up/down operator
-            //2nd condition makes sure we're below upper bound
-            //3rd condition makes sure we're above lower bound
             swap(newNode.grid[blankCoords[0]][blankCoords[1]], newNode.grid[horizontalMove][blankCoords[1]]);
-            cout << "moved up or down" << endl;
         }
         else if (i >= 2 && verticalMove < newNode.grid[0].size() && verticalMove >= 0) {
             swap(newNode.grid[blankCoords[0]][blankCoords[1]], newNode.grid[blankCoords[0]][verticalMove]);
-            cout << "moved left or right" << endl;
         }
         else {
             continue;
         }
 
-        expandedNodes.push_back(newNode);
+        newNode.cost = misplacedTile(newNode);
+
+        nodes.push(newNode);
         printNode(newNode);
     }
 
-    return expandedNodes;
-
 }
 
-//can we combine expand and queue later?
-void queueingFunction(queue<Node>& nodes, vector<Node> expandedNodes) {
-    for (int i = 0; i < expandedNodes.size(); i++) {
-        nodes.push(expandedNodes[i]);
-    }
-}
-
-bool search (const Node& initialState) {
-    queue<Node> nodes;
+Node search (const Node& initialState) {
+    priority_queue<Node, vector<Node>, greater<Node>> nodes;
     nodes.push(initialState);
 
     while (!nodes.empty()) {
         Node currNode;
-        currNode.grid = nodes.front().grid;
+        currNode.grid = nodes.top().grid;
         nodes.pop();
 
         if (currNode.grid == goal_state) {
-            return true;
+            return currNode;
         }
         else {
-            vector<Node> expandedNodes = expand(currNode);
-            queueingFunction(nodes, expandedNodes);
+            expand(currNode, nodes);
         }
     }
 
-    return false;
+    Node failNode;
+    failNode.cost = -1;
+    return failNode;
 
 }
 
@@ -119,14 +140,15 @@ int main () {
     Node tester;
     tester.grid = {
         {1, 2, 3},
-        {4, 5, 6},
-        {7, 0, 8}
+        {5, 0, 6},
+        {4, 7, 8}
     };
 
-    bool hi = search(tester);
+    Node hi = search(tester);
 
-    if (hi) {
+    if (hi.cost >= 0) {
         cout << "success!" << endl;
+        cout << "at depth: " << hi.depth << endl;
     }
 
 
