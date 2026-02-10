@@ -1,21 +1,36 @@
 #include <vector>
 #include <queue>
 #include <iostream>
+#include <unordered_map>
 
 using namespace std;
 
-struct Node {//this is mostly for readability
+struct Node {
     vector<vector<int>> grid;
     int cost = 0;
     int depth = 0;
 
-    bool operator>(const Node& rhs) const
-    {
-        return cost > rhs.cost;
+    bool operator>(const Node& rhs) const {
+        return (cost > rhs.cost);
     }
 
-    
+    bool operator==(const Node& rhs) const {
+        return (grid == rhs.grid);
+    }
+};
 
+struct GridHash
+{// I DON"T KNOW HOW TO MAKE HASH FUNCTIONS THIS CAME FROM STACK OVERFLOW!!
+//source: https://stackoverflow.com/questions/20511347/a-good-hash-function-for-a-vector
+  size_t operator()(const Node& node) const {
+    size_t seed = node.grid.size();
+    for(auto& i : node.grid) {
+        for (int j = 0; j < node.grid[0].size(); ++j) {
+        seed ^= i[j] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+    }
+  return seed;
+}
 };
 
 vector<vector<int>> goal_state = {
@@ -35,7 +50,6 @@ vector<vector<int>> operators = {
     {0, 1},
     {0, -1}
 };
-
 
 void printNode(const Node& node) {
     for (int i = 0; i < node.grid.size(); i++){
@@ -64,6 +78,28 @@ int misplacedTile(const Node& node) {
 
             if (node.grid[i][j] != properPos) {
                 outOfPlace++;
+            }
+        }
+    }
+
+    return outOfPlace;
+
+}
+
+int manhattan(const Node& node){
+
+    int outOfPlace = 0;
+
+    for (int i = 0; i < node.grid.size(); ++i){
+        for (int j = 0; j < node.grid[0].size(); ++j) {
+            
+            int properPos = 1 + (node.grid.size() * i + j); //note: this can't be zero!
+            if (properPos == 9) {
+                properPos = 0;
+            }
+
+            if (node.grid[i][j] != properPos) {
+                outOfPlace += abs(properPos - node.grid[i][j]);
             }
         }
     }
@@ -104,10 +140,10 @@ void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>&
             continue;
         }
 
-        newNode.cost = misplacedTile(newNode);
+        //newNode.cost = misplacedTile(newNode);
+        //newNode.cost = manhattan(newNode);
 
         nodes.push(newNode);
-        printNode(newNode);
     }
 
 }
@@ -116,10 +152,21 @@ Node search (const Node& initialState) {
     priority_queue<Node, vector<Node>, greater<Node>> nodes;
     nodes.push(initialState);
 
+    unordered_map<Node, int, GridHash> visited;
+
     while (!nodes.empty()) {
         Node currNode;
-        currNode.grid = nodes.top().grid;
+        currNode = nodes.top();
         nodes.pop();
+
+        printNode(currNode);
+
+        if (visited[currNode] > 0){ //already seen this node, skip it
+            continue;
+        }
+        else {
+            visited[currNode]++;
+        }
 
         if (currNode.grid == goal_state) {
             return currNode;
@@ -146,9 +193,10 @@ int main () {
 
     Node hi = search(tester);
 
+
     if (hi.cost >= 0) {
         cout << "success!" << endl;
-        cout << "at depth: " << hi.depth << endl;
+        printNode(hi);
     }
 
 
