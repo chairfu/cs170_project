@@ -1,7 +1,7 @@
 #include <vector>
 #include <queue>
 #include <iostream>
-#include <unordered_map>
+#include <unordered_set>
 
 using namespace std;
 
@@ -54,6 +54,7 @@ vector<vector<int>> operators = {
 void printNode(const Node& node) {
     for (int i = 0; i < node.grid.size(); i++){
         for (int j = 0; j < node.grid[0].size(); ++j){
+            //if (node.grid[i][j] == 9) {cout << 0 << " ";}
             cout << node.grid[i][j] << " ";
         }
         cout << endl;
@@ -92,14 +93,18 @@ int manhattan(const Node& node){
 
     for (int i = 0; i < node.grid.size(); ++i){
         for (int j = 0; j < node.grid[0].size(); ++j) {
+
+            int currVal = node.grid[i][j];
             
             int properPos = 1 + (node.grid.size() * i + j); //note: this can't be zero!
-            if (properPos == 9) {
-                properPos = 0;
-            }
+            //potentially change this later to include grids of greater sizes
+            if (currVal == 0) {currVal = 9;}
 
-            if (node.grid[i][j] != properPos) {
-                outOfPlace += abs(properPos - node.grid[i][j]);
+            if (currVal != properPos) {
+                int yTrue = currVal / node.grid.size(); //eg 4 / 3 = 1, 8 / 3 = 2, 1 / 3 = 0
+                int xTrue = (currVal - 1) % node.grid.size(); //eg 4 - 1 % 3 = 0, 8 - 1 % 3 = 1 
+
+                outOfPlace += abs(i - yTrue) + abs(j - xTrue);
             }
         }
     }
@@ -108,7 +113,7 @@ int manhattan(const Node& node){
 
 }
 
-void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes) {
+void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes, unordered_set<Node, GridHash>& visited) {
 
     vector<int> blankCoords;
 
@@ -140,10 +145,13 @@ void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>&
             continue;
         }
 
-        //newNode.cost = misplacedTile(newNode);
-        //newNode.cost = manhattan(newNode);
+        newNode.cost = newNode.depth + misplacedTile(newNode);
+        //newNode.cost = newNode.depth + manhattan(newNode);
+        if (!visited.count(newNode)) {
+            nodes.push(newNode);
+            visited.insert(newNode);
+        }
 
-        nodes.push(newNode);
     }
 
 }
@@ -152,27 +160,20 @@ Node search (const Node& initialState) {
     priority_queue<Node, vector<Node>, greater<Node>> nodes;
     nodes.push(initialState);
 
-    unordered_map<Node, int, GridHash> visited;
+    unordered_set<Node, GridHash> visited;
 
     while (!nodes.empty()) {
         Node currNode;
         currNode = nodes.top();
         nodes.pop();
 
-        printNode(currNode);
-
-        if (visited[currNode] > 0){ //already seen this node, skip it
-            continue;
-        }
-        else {
-            visited[currNode]++;
-        }
-
         if (currNode.grid == goal_state) {
             return currNode;
         }
         else {
-            expand(currNode, nodes);
+            cout << "expanding node: " << endl;
+            printNode(currNode);
+            expand(currNode, nodes, visited);
         }
     }
 
@@ -186,9 +187,9 @@ int main () {
 
     Node tester;
     tester.grid = {
-        {1, 2, 3},
-        {5, 0, 6},
-        {4, 7, 8}
+        {1, 6, 7},
+        {5, 0, 3},
+        {4, 8, 2}
     };
 
     Node hi = search(tester);
