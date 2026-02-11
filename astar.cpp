@@ -20,7 +20,7 @@ struct Node {
 };
 
 struct GridHash
-{// I DON"T KNOW HOW TO MAKE HASH FUNCTIONS THIS CAME FROM STACK OVERFLOW!!
+{// Note: This hash function was not created by me! I got it from a stack overflow thread.
 //source: https://stackoverflow.com/questions/20511347/a-good-hash-function-for-a-vector
   size_t operator()(const Node& node) const {
     size_t seed = node.grid.size();
@@ -33,12 +33,59 @@ struct GridHash
 }
 };
 
-vector<vector<int>> goal_state = {
+const vector<vector<int>> goal_state = {
     {1, 2, 3},
     {4, 5, 6},
     {7, 8, 0}
 };
 
+const vector<vector<int>> trivial = {
+    {1, 2, 3},
+    {4, 5, 6},
+    {7, 8, 0}
+};
+
+const vector<vector<int>> super_easy = {
+    {1, 2, 3},
+    {4, 5, 6},
+    {0, 7, 8}
+};
+
+const vector<vector<int>> easy = {
+    {1, 2, 3},
+    {5, 0, 6},
+    {4, 7, 8}
+};
+
+const vector<vector<int>> medium = {
+    {1, 3, 6},
+    {5, 0, 2},
+    {4, 7, 8}
+};
+
+const vector<vector<int>> tough = {
+    {1, 3, 6},
+    {5, 0, 7},
+    {4, 8, 2}
+};
+
+const vector<vector<int>> difficult = {
+    {1, 6, 7},
+    {5, 0, 3},
+    {4, 8, 2}
+};
+
+const vector<vector<int>> really_difficult = {
+    {7, 1, 2},
+    {4, 8, 5},
+    {6, 3, 0}
+};
+
+const vector<vector<int>> good_luck = {
+    {0, 7, 2},
+    {4, 6, 1},
+    {3, 5, 8}
+};
 //our operators are:
     //move blank up
     //move blank down
@@ -54,7 +101,6 @@ vector<vector<int>> operators = {
 void printNode(const Node& node) {
     for (int i = 0; i < node.grid.size(); i++){
         for (int j = 0; j < node.grid[0].size(); ++j){
-            //if (node.grid[i][j] == 9) {cout << 0 << " ";}
             cout << node.grid[i][j] << " ";
         }
         cout << endl;
@@ -96,9 +142,8 @@ int manhattan(const Node& node){
 
             int currVal = node.grid[i][j];
             
-            int properPos = 1 + (node.grid.size() * i + j); //note: this can't be zero!
-            //potentially change this later to include grids of greater sizes
-            if (currVal == 0) {currVal = 9;}
+            int properPos = 1 + (node.grid.size() * i + j);
+            if (currVal == 0) {currVal = node.grid.size() * node.grid.size();}
 
             if (currVal != properPos) {
                 int yTrue = currVal / node.grid.size(); //eg 4 / 3 = 1, 8 / 3 = 2, 1 / 3 = 0
@@ -113,7 +158,7 @@ int manhattan(const Node& node){
 
 }
 
-void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes, unordered_set<Node, GridHash>& visited) {
+void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes, unordered_set<Node, GridHash>& visited, const int searchType) {
 
     vector<int> blankCoords;
 
@@ -145,8 +190,13 @@ void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>&
             continue;
         }
 
-        newNode.cost = newNode.depth + misplacedTile(newNode);
-        //newNode.cost = newNode.depth + manhattan(newNode);
+        if (searchType == 0) {
+            newNode.cost = newNode.depth;
+        }
+        else {
+            newNode.cost = (searchType > 1) ? newNode.depth + manhattan(newNode) : newNode.cost + misplacedTile(newNode);
+        }
+
         if (!visited.count(newNode)) {
             nodes.push(newNode);
             visited.insert(newNode);
@@ -156,7 +206,7 @@ void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>&
 
 }
 
-Node search (const Node& initialState) {
+Node search (const Node& initialState, const int searchType) {
     priority_queue<Node, vector<Node>, greater<Node>> nodes;
     nodes.push(initialState);
 
@@ -173,7 +223,7 @@ Node search (const Node& initialState) {
         else {
             cout << "expanding node: " << endl;
             printNode(currNode);
-            expand(currNode, nodes, visited);
+            expand(currNode, nodes, visited, searchType);
         }
     }
 
@@ -185,20 +235,70 @@ Node search (const Node& initialState) {
 
 int main () {
 
-    Node tester;
-    tester.grid = {
-        {1, 6, 7},
-        {5, 0, 3},
-        {4, 8, 2}
-    };
+    //the interface begins...
 
-    Node hi = search(tester);
+    cout << "Hi! I'm Willa's CS170 project! ٩(◕‿◕｡)۶" << endl;
+    cout << "If Willa did a good job, I can solve any solvable 8 puzzle. You can pick a puzzle for me to solve if you don't believe me: " << endl;
 
+    int puzzleType;
 
-    if (hi.cost >= 0) {
-        cout << "success!" << endl;
-        printNode(hi);
+    cout << "Select 0 for trivial" << endl;
+    cout << "Select 1 for super easy" << endl;
+    cout << "Select 2 for easy" << endl;
+    cout << "Select 3 for medium" << endl;
+    cout << "Select 4 for tough" << endl;
+    cout << "Select 5 for difficult" << endl;
+    cout << "Select 6 for really difficult" << endl;
+    cout << "Select 7 for really SUPER difficult" << endl;
+
+    cin >> puzzleType;
+    Node puzzle;
+
+    switch (puzzleType) {
+        case 0:
+            puzzle.grid = trivial;
+            break;
+        case 1:
+            puzzle.grid = super_easy;
+            break;
+        case 2:
+            puzzle.grid = easy;
+            break;
+        case 3:
+            puzzle.grid = medium;
+            break;
+        case 4:
+            puzzle.grid = tough;
+            break;
+        case 5:
+            puzzle.grid = difficult;
+            break;
+        case 6:
+            puzzle.grid = really_difficult;
+            break;
+        case 7:
+            puzzle.grid = good_luck;
+            break;
+        default:
+            break;
     }
 
+    cout << "And how would you like me to solve this puzzle?" << endl;
+
+    int searchType;
+
+    cout << "Select 0 for Uniform Cost Search" << endl;
+    cout << "Select 1 for A* with Misplaced Tile" << endl;
+    cout << "Select 2 for A* with Manhattan Distance" << endl;
+
+    cin >> searchType;
+
+    Node solved;
+    solved = search(puzzle, searchType);
+
+    if (solved.cost >= 0) {
+        cout << "Success!" << endl;
+        printNode(solved);
+    }
 
 }
