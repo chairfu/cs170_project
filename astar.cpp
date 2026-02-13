@@ -173,8 +173,8 @@ int manhattan(const Node& node){
             if (currVal == 0 || properPos == 9) {continue;}
 
             if (currVal != properPos) {
-                int yTrue = (currVal - 1) / node.grid.size(); //eg 4 / 3 = 1, 8 / 3 = 2, 1 / 3 = 0
-                int xTrue = (currVal - 1) % node.grid.size(); //eg 4 - 1 % 3 = 0, 8 - 1 % 3 = 1 
+                int yTrue = (currVal - 1) / node.grid.size();
+                int xTrue = (currVal - 1) % node.grid.size();
 
                 outOfPlace += abs(i - yTrue) + abs(j - xTrue);
             }
@@ -264,8 +264,6 @@ Node search (const Node& initialState, const int searchType, int& nodesExpanded,
 }
 
 int main () {
-
-    //the interface begins...
 
     cout << "Hi! I'm Willa's CS170 project!" << endl;
     cout << "What kind of puzzle would you like me to solve?" << endl;
