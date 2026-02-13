@@ -2,6 +2,7 @@
 #include <queue>
 #include <iostream>
 #include <unordered_set>
+#include <algorithm>
 
 using namespace std;
 
@@ -111,6 +112,34 @@ void printNode(const Node& node) {
     cout << endl;
 }
 
+vector<vector<int>> custom_grid() {
+
+    cout << "What size do you want the puzzle to be? (eg 8, 15, 24...)" << endl;
+    int puzzleSize;
+    cin >> puzzleSize;
+
+    int rowLength = sqrt(puzzleSize + 1);
+    cout << rowLength << endl;
+
+    vector<vector<int>> grid;
+
+    for (int i = 0; i < rowLength; ++i) {
+        cout << "Enter row " << i + 1 << endl;
+        cout << "Confirm each element by selecting 'enter', and type '0' to indicate the blank" << endl;
+        vector<int> row(rowLength);
+        for (int j = 0; j < rowLength; ++j) {
+            cin >> row[j];
+        }
+        grid.push_back(row);
+    }
+
+    Node test;
+    test.grid = grid;
+    printNode(test);
+    return grid;
+
+}
+
 int misplacedTile(const Node& node) {
 
     int outOfPlace = 0;
@@ -119,9 +148,7 @@ int misplacedTile(const Node& node) {
         for (int j = 0; j < node.grid[0].size(); ++j) {
             
             int properPos = 1 + (node.grid.size() * i + j);
-            if (properPos == 9) {
-                properPos = 0;
-            }
+            if (node.grid[i][j] == 0 || properPos == 9) {continue;}
 
             if (node.grid[i][j] != properPos) {
                 outOfPlace++;
@@ -143,10 +170,10 @@ int manhattan(const Node& node){
             int currVal = node.grid[i][j];
             
             int properPos = 1 + (node.grid.size() * i + j);
-            if (currVal == 0) {currVal = node.grid.size() * node.grid.size();}
+            if (currVal == 0 || properPos == 9) {continue;}
 
             if (currVal != properPos) {
-                int yTrue = currVal / node.grid.size(); //eg 4 / 3 = 1, 8 / 3 = 2, 1 / 3 = 0
+                int yTrue = (currVal - 1) / node.grid.size(); //eg 4 / 3 = 1, 8 / 3 = 2, 1 / 3 = 0
                 int xTrue = (currVal - 1) % node.grid.size(); //eg 4 - 1 % 3 = 0, 8 - 1 % 3 = 1 
 
                 outOfPlace += abs(i - yTrue) + abs(j - xTrue);
@@ -158,7 +185,7 @@ int manhattan(const Node& node){
 
 }
 
-void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes, unordered_set<Node, GridHash>& visited, const int searchType) {
+void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>& nodes, const int searchType, int& nodesExpanded) {
 
     vector<int> blankCoords;
 
@@ -194,19 +221,17 @@ void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>&
             newNode.cost = newNode.depth;
         }
         else {
-            newNode.cost = (searchType > 1) ? newNode.depth + manhattan(newNode) : newNode.cost + misplacedTile(newNode);
+            newNode.cost = (searchType == 2) ? newNode.depth + manhattan(newNode) : newNode.depth + misplacedTile(newNode);
         }
 
-        if (!visited.count(newNode)) {
             nodes.push(newNode);
-            visited.insert(newNode);
-        }
+            nodesExpanded++;
 
     }
 
 }
 
-Node search (const Node& initialState, const int searchType) {
+Node search (const Node& initialState, const int searchType, int& nodesExpanded, int& queueSize) {
     priority_queue<Node, vector<Node>, greater<Node>> nodes;
     nodes.push(initialState);
 
@@ -217,13 +242,18 @@ Node search (const Node& initialState, const int searchType) {
         currNode = nodes.top();
         nodes.pop();
 
+        if (visited.count(currNode)) {continue;}
+        visited.insert(currNode);
+
+        queueSize = max(queueSize, int(nodes.size()));
+
         if (currNode.grid == goal_state) {
             return currNode;
         }
         else {
             cout << "expanding node: " << endl;
             printNode(currNode);
-            expand(currNode, nodes, visited, searchType);
+            expand(currNode, nodes, searchType, nodesExpanded);
         }
     }
 
@@ -237,68 +267,86 @@ int main () {
 
     //the interface begins...
 
-    cout << "Hi! I'm Willa's CS170 project! ٩(◕‿◕｡)۶" << endl;
-    cout << "If Willa did a good job, I can solve any solvable 8 puzzle. You can pick a puzzle for me to solve if you don't believe me: " << endl;
+    cout << "Hi! I'm Willa's CS170 project!" << endl;
+    cout << "What kind of puzzle would you like me to solve?" << endl;
 
     int puzzleType;
+    int quit = 0;
 
-    cout << "Select 0 for trivial" << endl;
-    cout << "Select 1 for super easy" << endl;
-    cout << "Select 2 for easy" << endl;
-    cout << "Select 3 for medium" << endl;
-    cout << "Select 4 for tough" << endl;
-    cout << "Select 5 for difficult" << endl;
-    cout << "Select 6 for really difficult" << endl;
-    cout << "Select 7 for really SUPER difficult" << endl;
+    while (quit != 1) {    
 
-    cin >> puzzleType;
-    Node puzzle;
+        cout << "Select 0 for trivial" << endl;
+        cout << "Select 1 for super easy" << endl;
+        cout << "Select 2 for easy" << endl;
+        cout << "Select 3 for medium" << endl;
+        cout << "Select 4 for tough" << endl;
+        cout << "Select 5 for difficult" << endl;
+        cout << "Select 6 for really difficult" << endl;
+        cout << "Select 7 for really SUPER difficult" << endl;
+        cout << "Select 8 to make your own puzzle" << endl;
 
-    switch (puzzleType) {
-        case 0:
-            puzzle.grid = trivial;
-            break;
-        case 1:
-            puzzle.grid = super_easy;
-            break;
-        case 2:
-            puzzle.grid = easy;
-            break;
-        case 3:
-            puzzle.grid = medium;
-            break;
-        case 4:
-            puzzle.grid = tough;
-            break;
-        case 5:
-            puzzle.grid = difficult;
-            break;
-        case 6:
-            puzzle.grid = really_difficult;
-            break;
-        case 7:
-            puzzle.grid = good_luck;
-            break;
-        default:
-            break;
-    }
+        cin >> puzzleType;
+        Node puzzle;
 
-    cout << "And how would you like me to solve this puzzle?" << endl;
+        switch (puzzleType) {
+            case 0:
+                puzzle.grid = trivial;
+                break;
+            case 1:
+                puzzle.grid = super_easy;
+                break;
+            case 2:
+                puzzle.grid = easy;
+                break;
+            case 3:
+                puzzle.grid = medium;
+                break;
+            case 4:
+                puzzle.grid = tough;
+                break;
+            case 5:
+                puzzle.grid = difficult;
+                break;
+            case 6:
+                puzzle.grid = really_difficult;
+                break;
+            case 7:
+                puzzle.grid = good_luck;
+                break;
+            case 8:
+                puzzle.grid = custom_grid();
+                break;
+            default:
+                break;
+        }
 
-    int searchType;
+        cout << "And how would you like me to solve this puzzle?" << endl;
 
-    cout << "Select 0 for Uniform Cost Search" << endl;
-    cout << "Select 1 for A* with Misplaced Tile" << endl;
-    cout << "Select 2 for A* with Manhattan Distance" << endl;
+        int searchType;
 
-    cin >> searchType;
+        cout << "Select 0 for Uniform Cost Search" << endl;
+        cout << "Select 1 for A* with Misplaced Tile" << endl;
+        cout << "Select 2 for A* with Manhattan Distance" << endl;
 
-    Node solved;
-    solved = search(puzzle, searchType);
+        cin >> searchType;
 
-    if (solved.cost >= 0) {
-        cout << "Success!" << endl;
-        printNode(solved);
+        int nodesExpanded = 0;
+        int maxQueueSize = 0;
+
+        Node solved;
+        solved = search(puzzle, searchType, nodesExpanded, maxQueueSize);
+
+        if (solved.cost >= 0) {
+            cout << "Success!" << endl;
+            printNode(solved);
+
+            cout << "Nodes expanded: " << nodesExpanded << endl;
+            cout << "Max nodes in queue: " << maxQueueSize << endl;
+        }
+
+        cout << "Would you like to search again? Press 0 if yes, 1 if you'd like to exit: " << endl;
+        cin >> quit;
+
     }
 
 }
