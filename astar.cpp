@@ -10,6 +10,7 @@ struct Node {
     vector<vector<int>> grid;
     int cost = 0;
     int depth = 0;
+    int hOfN = 0;
 
     bool operator>(const Node& rhs) const {
         return (cost > rhs.cost);
@@ -107,8 +108,6 @@ void printNode(const Node& node) {
         cout << endl;
     }
 
-    cout << "cost: " << node.cost << endl;
-    cout << "depth: " << node.depth << endl;
     cout << endl;
 }
 
@@ -173,8 +172,8 @@ int manhattan(const Node& node){
             if (currVal == 0 || properPos == 9) {continue;}
 
             if (currVal != properPos) {
-                int yTrue = (currVal - 1) / node.grid.size(); //eg 4 / 3 = 1, 8 / 3 = 2, 1 / 3 = 0
-                int xTrue = (currVal - 1) % node.grid.size(); //eg 4 - 1 % 3 = 0, 8 - 1 % 3 = 1 
+                int yTrue = (currVal - 1) / node.grid.size();
+                int xTrue = (currVal - 1) % node.grid.size();
 
                 outOfPlace += abs(i - yTrue) + abs(j - xTrue);
             }
@@ -220,8 +219,13 @@ void expand(const Node& node, priority_queue<Node, vector<Node>, greater<Node>>&
         if (searchType == 0) {
             newNode.cost = newNode.depth;
         }
+        else if (searchType == 1){
+            newNode.hOfN = misplacedTile(newNode);
+            newNode.cost = newNode.depth + newNode.hOfN;
+        }
         else {
-            newNode.cost = (searchType == 2) ? newNode.depth + manhattan(newNode) : newNode.depth + misplacedTile(newNode);
+            newNode.hOfN = manhattan(newNode);
+            newNode.cost = newNode.depth + newNode.hOfN;
         }
 
             nodes.push(newNode);
@@ -237,6 +241,7 @@ Node search (const Node& initialState, const int searchType, int& nodesExpanded,
 
     unordered_set<Node, GridHash> visited;
 
+    bool first = true;
     while (!nodes.empty()) {
         Node currNode;
         currNode = nodes.top();
@@ -251,7 +256,13 @@ Node search (const Node& initialState, const int searchType, int& nodesExpanded,
             return currNode;
         }
         else {
-            cout << "expanding node: " << endl;
+            if (first) {
+                cout << "Starting search on puzzle: " << endl;
+                first = false;
+            }
+            else {
+                cout << "The best node to expand with a g(n) = " << currNode.depth << " and h(n) = " << currNode.hOfN << " is..." << endl;
+            }
             printNode(currNode);
             expand(currNode, nodes, searchType, nodesExpanded);
         }
@@ -264,8 +275,6 @@ Node search (const Node& initialState, const int searchType, int& nodesExpanded,
 }
 
 int main () {
-
-    //the interface begins...
 
     cout << "Hi! I'm Willa's CS170 project!" << endl;
     cout << "What kind of puzzle would you like me to solve?" << endl;
@@ -340,6 +349,7 @@ int main () {
             cout << "Success!" << endl;
             printNode(solved);
 
+            cout << "Solution depth was: " << solved.depth << endl;
             cout << "Nodes expanded: " << nodesExpanded << endl;
             cout << "Max nodes in queue: " << maxQueueSize << endl;
         }
